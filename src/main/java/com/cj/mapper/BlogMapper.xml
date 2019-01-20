@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cj.mapper.BlogMapper">
+	<resultMap type="com.cj.pojo.Article" id="BaseResultMap">
+		<result column="id"  property="blogId" jdbcType="INTEGER"/>
+		<result column="Blog_Title"  property="blogTitle" jdbcType="VARCHAR"/>
+		<result column="Blog_Create_time"  property="blogCreateTime" jdbcType="VARCHAR"/>
+		<result column="Blog_Context"  property="blogContext" jdbcType="VARCHAR"/>
+		<result column="Blog_type"  property="blogType" jdbcType="VARCHAR"/>
+		<result column="Blog_status"  property="blogStatus" jdbcType="VARCHAR"/>
+		<result column="Blog_article_type"  property="blogArticleType" jdbcType="VARCHAR"/>
+		<result column="Blog_other_type"  property="blogOtherType" jdbcType="VARCHAR"/>
+		<result column="img1"  property="blogImg1" jdbcType="VARCHAR"/>
+		<result column="img2"  property="blogImg2" jdbcType="VARCHAR"/>
+		<result column="img3"  property="blogImg3" jdbcType="VARCHAR"/>
+		<result column="Blog_view_number"  property="blogViewNumber" jdbcType="INTEGER"/>
+		<result column="Blog_like_number"  property="blogLikeNumber" jdbcType="INTEGER"/>
+		<result column="Blog_comment_number"  property="blogCommentNumber" jdbcType="INTEGER"/>
+		<result column="Blog_article_introduction" property="blogAritcleInstroduction" jdbcType="INTEGER"/>
+		<result column="Blog_author"  property="blogAuthor" jdbcType="VARCHAR"/>
+		<result column="Blog_visit_ip" property="blogVisitIp" jdbcType="VARCHAR"/>
+		<result column="Blog_visit_time" property="blogVisitTime" jdbcType="VARCHAR"/>
+		<result column="Blog_visit_type" property="blogVisitType" jdbcType="INTEGER"/> 
+		<association property="page" javaType="com.cj.pojo.Page">
+			<result column="totalCount" property="totalCount" jdbcType="INTEGER" />
+			<result column="beginIndex" property="beginIndex" jdbcType="INTEGER" />
+			<result column="everyPage" property="everyPage" jdbcType="INTEGER" />
+			<result column="endIndex" property="endIndex" jdbcType="INTEGER" /> 
+		</association>
+	</resultMap>
+	<!-- 首页获取文章列表 -->
+	<select id="getList" resultMap="BaseResultMap" parameterType="com.cj.pojo.Article">
+		select 
+			a.id, a.Blog_Title,a.Blog_Create_time,a.Blog_Context,a.Blog_article_introduction,
+			a.Blog_type,a.Blog_article_type,a.Blog_other_type,a.img1,
+			a.img2,a.img3,b.Blog_view_number,b.Blog_like_number,
+			b.Blog_comment_number,b.Blog_author
+		from 
+			Blog_article a,Blog_article_information b
+	    where 
+	    	a.id = b.id  
+	    <if test="blogType!=null">
+	    	and
+	    	a.Blog_type = #{blogType}
+	    </if>
+	    limit #{page.beginIndex},#{page.everyPage} 
+	</select>
+	<!-- 获取推荐文章列表 -->
+	<select id="getSideList"  resultMap="BaseResultMap" parameterType="com.cj.pojo.Article">
+		select 
+			a.id, a.Blog_Title,a.Blog_Create_time,a.Blog_Context,a.Blog_article_introduction,
+			a.Blog_type,a.Blog_article_type,a.Blog_other_type,a.img1,
+			a.img2,a.img3,b.Blog_view_number,b.Blog_like_number,
+			b.Blog_comment_number,b.Blog_author
+		from 
+			Blog_article a,Blog_article_information b
+	    where 
+	    	a.id = b.id  
+	</select>
+	<!-- 获取文章点击排行列表 -->
+	<select id="getBlogRankingList"  resultMap="BaseResultMap" parameterType="com.cj.pojo.Article">
+		select 
+			a.id, a.Blog_Title,a.Blog_Create_time,b.Blog_view_number,a.img1
+		from 
+			Blog_article a,Blog_article_information b
+	    where 
+	    	a.id = b.id  order by b.Blog_view_number desc
+	</select>
+	
+	<!-- 查询文章内容 -->
+	<select id="getArticleInfo" resultMap="BaseResultMap" parameterType="int">
+		select 
+			a.id,a.Blog_Title,a.Blog_Create_time,a.Blog_Context,
+			a.Blog_type,b.Blog_view_number,b.Blog_like_number,
+			b.Blog_comment_number,b.Blog_author
+		from 
+			Blog_article a,Blog_article_information b
+	    where 
+	    	a.id = b.id and a.id = #{blogId}
+	</select>
+	<!-- 获取文章数量 -->
+	<select id="getArticleNumberByType" resultType="int" parameterType="com.cj.pojo.Article">
+		SELECT 
+			COUNT(a.id) 
+		FROM 
+			Blog_article a,Blog_article_information b
+	    where 
+	    	a.id = b.id 
+	    <if test="blogType!=null">
+	    	and
+	    	a.Blog_type = #{blogType}
+	    </if>
+	</select>
+	
+	<insert id="insertUser" parameterType="Map">
+	insert into users(name,age) values(#{name},#{age})
+	</insert>
+	
+	<!-- 查询当前访问ip是否有过访问记录 -->
+	<select id="getVisitIp" parameterType="com.cj.pojo.Article" resultMap="BaseResultMap">
+		SELECT  
+			a.Blog_visit_ip,a.blog_id,a.Blog_visit_time,b.Blog_view_number,b.Blog_like_number
+		FROM 
+			Blog_visit_count a,Blog_article_information b
+		WHERE 
+			a.Blog_id = b.id
+		and
+			a.Blog_visit_ip = #{blogVisitIp} 
+		and 
+			a.blog_id = #{blogId}
+    	and 
+    		a.Blog_visit_type = #{blogVisitType}
+	</select>
+	<!-- 将当前浏览ip插入访问记录表中 -->
+	<insert id="insertVisitIp" parameterType="com.cj.pojo.Article">
+		insert into Blog_visit_count(Blog_visit_ip,Blog_id,Blog_visit_time,Blog_visit_type)
+		values(#{blogVisitIp},#{blogId},#{blogVisitTime},0)
+	</insert>
+	<!-- 更新浏览ip的访问时间 -->
+	<update id="updateVisitIp" parameterType="com.cj.pojo.Article" >
+		update 
+			Blog_visit_count
+		set
+			Blog_visit_time = #{blogVisitTime}
+		where 
+			Blog_visit_ip = #{blogVisitIp} and blog_id = #{blogId} and blog_visit_type = #{blogVisitType}
+	</update>
+	<!-- 将当前浏览ip插入访问记录表中 -->
+	<insert id="insertLikeIp" parameterType="com.cj.pojo.Article">
+		insert into Blog_visit_count(Blog_visit_ip,Blog_id,Blog_visit_time,Blog_visit_type)
+		values(#{blogVisitIp},#{blogId},#{blogVisitTime},1)
+	</insert>
+	<!-- 更新文章的访问数量 -->
+	<update id="updateBlogVisitNumber" parameterType="com.cj.pojo.Article">
+		update 
+			Blog_article_information
+		set
+			Blog_view_number = #{blogViewNumber}
+		where 
+			id = #{blogId}
+	</update>
+	
+	<!-- 更新文章的喜欢数量 -->
+	<update id="updateBlogLikeNumber" parameterType="com.cj.pojo.Article">
+		update
+			Blog_article_information
+		set
+			Blog_like_number = #{blogLikeNumber}
+		where 
+			id = #{blogId}
+	</update>
+</mapper>
